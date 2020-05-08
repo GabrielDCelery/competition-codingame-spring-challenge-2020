@@ -1,25 +1,32 @@
 import { IGameState } from '../game-state';
 import { analyzeCoordinatesInRangeOfPac } from './analyze-coordinates-in-range-of-pac';
-import { ICoordinates, transformKeyToCoordinates } from '../maps';
+import { ICoordinates } from '../maps';
 
 export const createCommandsForTurn = (
     gameState: IGameState
-): { pacId: string; coordinates: ICoordinates }[] => {
+): { pacId: string; coordinates: ICoordinates; comment: string }[] => {
     return Object.keys(gameState.pacs.me).map(pacId => {
-        const coordinatesAnalysis = analyzeCoordinatesInRangeOfPac({
-            pacId,
-            maxDistance: 4,
+        const targetsInArea = analyzeCoordinatesInRangeOfPac({
+            pacId: parseInt(pacId),
+            maxDistance: 10,
             gameState,
         });
 
         let scoreDistanceRatio = 0;
         let chosenCoordinates: ICoordinates = gameState.pacs.me[pacId].coordinates;
 
-        Object.keys(coordinatesAnalysis).forEach(key => {
-            const coordinates = transformKeyToCoordinates(key);
-            const { score, distance } = coordinatesAnalysis[key];
+        Object.keys(targetsInArea.superPellets).forEach(locationKey => {
+            const { coordinates, distance, score } = targetsInArea.superPellets[locationKey];
             const newScoreDistanceRation = score / distance;
+            if (scoreDistanceRatio <= newScoreDistanceRation) {
+                scoreDistanceRatio = newScoreDistanceRation;
+                chosenCoordinates = coordinates;
+            }
+        });
 
+        Object.keys(targetsInArea.normalPellets).forEach(locationKey => {
+            const { coordinates, distance, score } = targetsInArea.normalPellets[locationKey];
+            const newScoreDistanceRation = score / distance;
             if (scoreDistanceRatio <= newScoreDistanceRation) {
                 scoreDistanceRatio = newScoreDistanceRation;
                 chosenCoordinates = coordinates;
@@ -29,6 +36,7 @@ export const createCommandsForTurn = (
         return {
             pacId,
             coordinates: chosenCoordinates,
+            comment: '',
         };
     });
 };

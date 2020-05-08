@@ -16,6 +16,13 @@ export const directionVectors: { [key in EDirection]: IVector } = {
     [EDirection.RIGHT]: { x: 1, y: 0 },
 };
 
+const vectorsPointingToNeighbouringCoordinates: IVector[] = [
+    directionVectors[EDirection.UP],
+    directionVectors[EDirection.DOWN],
+    directionVectors[EDirection.LEFT],
+    directionVectors[EDirection.RIGHT],
+];
+
 export const createBlankWalkabilityMatrix = ({
     width,
     height,
@@ -98,12 +105,7 @@ export const getWalkableNeighbouringCoordinates = ({
 }): ICoordinates[] => {
     const validNeighbouringCoordinates: ICoordinates[] = [];
 
-    [
-        directionVectors[EDirection.UP],
-        directionVectors[EDirection.DOWN],
-        directionVectors[EDirection.LEFT],
-        directionVectors[EDirection.RIGHT],
-    ].forEach((vector: IVector): void => {
+    vectorsPointingToNeighbouringCoordinates.forEach((vector: IVector): void => {
         const { x, y } = addVectorToCoordinates({ coordinates, vector, gameMap });
 
         if (gameMap.walkabilityMatrix[x][y] === false) {
@@ -154,12 +156,7 @@ export const getCoordinatesInLineOfSight = ({
     const visitedCoordinatesMap: { [index: string]: boolean } = {};
     const coordinatesInLineOfSight: ICoordinates[] = [];
 
-    [
-        directionVectors[EDirection.UP],
-        directionVectors[EDirection.DOWN],
-        directionVectors[EDirection.LEFT],
-        directionVectors[EDirection.RIGHT],
-    ].forEach((vector: IVector): void => {
+    vectorsPointingToNeighbouringCoordinates.forEach((vector: IVector): void => {
         let distance = 1;
         let hasNotHitWall = true;
         let hasNotVisitedCoordinates = true;

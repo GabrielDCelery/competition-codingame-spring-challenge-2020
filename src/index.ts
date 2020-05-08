@@ -111,9 +111,9 @@ while (true) {
         });
     });
 
-    const commands = createCommandsForTurn(gameState).map(({ pacId, coordinates }) => {
+    const commands = createCommandsForTurn(gameState).map(({ pacId, coordinates, comment }) => {
         const { x, y } = coordinates;
-        return `MOVE ${pacId} ${x} ${y}`;
+        return `MOVE ${pacId} ${x} ${y} ${comment}`;
     });
 
     console.log(commands.join('|'));

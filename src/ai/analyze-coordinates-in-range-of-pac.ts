@@ -4,9 +4,39 @@ import {
     transformCoordinatesToKey,
 } from '../maps';
 import { IGameState } from '../game-state';
+import { SCORE_SUPER_PELLET } from '../constants';
 
-export interface ICoordinatesAnalysis {
-    [index: string]: { distance: number; score: number };
+interface ITargetsInArea {
+    myPacs: {
+        [index: string]: {
+            coordinates: ICoordinates;
+            distance: number;
+            score: number;
+            pacId: number;
+        };
+    };
+    opponentPacs: {
+        [index: string]: {
+            coordinates: ICoordinates;
+            distance: number;
+            score: number;
+            pacId: number;
+        };
+    };
+    superPellets: {
+        [index: string]: {
+            coordinates: ICoordinates;
+            distance: number;
+            score: number;
+        };
+    };
+    normalPellets: {
+        [index: string]: {
+            coordinates: ICoordinates;
+            distance: number;
+            score: number;
+        };
+    };
 }
 
 export const analyzeCoordinatesInRangeOfPac = ({
@@ -14,20 +44,27 @@ export const analyzeCoordinatesInRangeOfPac = ({
     maxDistance,
     gameState,
 }: {
-    pacId: string;
+    pacId: number;
     maxDistance: number;
     gameState: IGameState;
-}): ICoordinatesAnalysis => {
-    const coordinatesAnalysis: ICoordinatesAnalysis = {};
+}): ITargetsInArea => {
+    const analyzedCells: { [index: string]: boolean } = {};
+
+    const targetsInArea: ITargetsInArea = {
+        myPacs: {},
+        opponentPacs: {},
+        superPellets: {},
+        normalPellets: {},
+    };
 
     const queue: Array<{
-        distance: number;
         coordinates: ICoordinates;
+        distance: number;
         score: number;
     }> = [
         {
-            distance: 0,
             coordinates: gameState.pacs.me[pacId].coordinates,
+            distance: 0,
             score: 0,
         },
     ];
@@ -35,34 +72,82 @@ export const analyzeCoordinatesInRangeOfPac = ({
     while (queue.length > 0) {
         const item = queue.shift();
 
-        if (item && (item.distance <= maxDistance || Object.keys(coordinatesAnalysis).length < 2)) {
-            const { distance, coordinates, score } = item;
-
-            coordinatesAnalysis[transformCoordinatesToKey(coordinates)] = item;
-
-            getWalkableNeighbouringCoordinates({
-                coordinates,
-                gameMap: gameState.map,
-            }).forEach(coordinates => {
-                const locationKey = transformCoordinatesToKey(coordinates);
-
-                if (coordinatesAnalysis[locationKey]) {
-                    return;
-                }
-
-                const { x, y } = coordinates;
-                const analysis = {
-                    distance: distance + 1,
-                    score: score + gameState.map.pelletMatrix[x][y],
-                };
-
-                queue.push({
-                    ...analysis,
-                    coordinates,
-                });
-            });
+        if (!item) {
+            continue;
         }
+
+        const { distance, coordinates, score } = item;
+        const locationKey = transformCoordinatesToKey(coordinates);
+
+        if (analyzedCells[locationKey] === true) {
+            continue;
+        }
+
+        analyzedCells[locationKey] = true;
+
+        const { x, y } = coordinates;
+
+        const myPacId = gameState.map.pacMatrix.me[x][y];
+
+        if (myPacId !== null && myPacId !== pacId) {
+            targetsInArea.opponentPacs[locationKey] = {
+                coordinates,
+                distance,
+                score,
+                pacId: myPacId,
+            };
+            continue;
+        }
+
+        const opponentPacId = gameState.map.pacMatrix.opponent[x][y];
+
+        if (opponentPacId !== null) {
+            targetsInArea.opponentPacs[locationKey] = {
+                coordinates,
+                distance,
+                score,
+                pacId: opponentPacId,
+            };
+            continue;
+        }
+
+        const pelletScore = gameState.map.pelletMatrix[x][y];
+
+        if (pelletScore === SCORE_SUPER_PELLET) {
+            targetsInArea.superPellets[locationKey] = {
+                coordinates,
+                distance,
+                score: score + pelletScore,
+            };
+            continue;
+        }
+
+        const walkableNeighbouringCoordinates = getWalkableNeighbouringCoordinates({
+            coordinates,
+            gameMap: gameState.map,
+        });
+
+        const isDeadEnd =
+            walkableNeighbouringCoordinates.length === 1 &&
+            analyzedCells[transformCoordinatesToKey(walkableNeighbouringCoordinates[0])] === true;
+
+        if (distance === maxDistance || isDeadEnd) {
+            targetsInArea.normalPellets[locationKey] = {
+                coordinates,
+                distance,
+                score: score + pelletScore,
+            };
+            continue;
+        }
+
+        walkableNeighbouringCoordinates.forEach(coordinates => {
+            queue.push({
+                coordinates,
+                distance: distance + 1,
+                score: score + pelletScore,
+            });
+        });
     }
 
-    return coordinatesAnalysis;
+    return targetsInArea;
 };
