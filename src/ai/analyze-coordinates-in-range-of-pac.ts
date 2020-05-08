@@ -13,6 +13,7 @@ interface ITargetsInArea {
             distance: number;
             score: number;
             pacId: number;
+            path: ICoordinates[];
         };
     };
     opponentPacs: {
@@ -21,6 +22,7 @@ interface ITargetsInArea {
             distance: number;
             score: number;
             pacId: number;
+            path: ICoordinates[];
         };
     };
     superPellets: {
@@ -28,6 +30,7 @@ interface ITargetsInArea {
             coordinates: ICoordinates;
             distance: number;
             score: number;
+            path: ICoordinates[];
         };
     };
     normalPellets: {
@@ -35,6 +38,7 @@ interface ITargetsInArea {
             coordinates: ICoordinates;
             distance: number;
             score: number;
+            path: ICoordinates[];
         };
     };
 }
@@ -61,11 +65,13 @@ export const analyzeCoordinatesInRangeOfPac = ({
         coordinates: ICoordinates;
         distance: number;
         score: number;
+        path: ICoordinates[];
     }> = [
         {
             coordinates: gameState.pacs.me[pacId].coordinates,
             distance: 0,
             score: 0,
+            path: [gameState.pacs.me[pacId].coordinates],
         },
     ];
 
@@ -76,7 +82,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
             continue;
         }
 
-        const { distance, coordinates, score } = item;
+        const { distance, coordinates, score, path } = item;
         const locationKey = transformCoordinatesToKey(coordinates);
 
         if (analyzedCells[locationKey] === true) {
@@ -95,6 +101,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
                 distance,
                 score,
                 pacId: myPacId,
+                path,
             };
             continue;
         }
@@ -107,6 +114,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
                 distance,
                 score,
                 pacId: opponentPacId,
+                path,
             };
             continue;
         }
@@ -118,6 +126,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
                 coordinates,
                 distance,
                 score: score + pelletScore,
+                path,
             };
             continue;
         }
@@ -136,6 +145,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
                 coordinates,
                 distance,
                 score: score + pelletScore,
+                path,
             };
             continue;
         }
@@ -145,6 +155,7 @@ export const analyzeCoordinatesInRangeOfPac = ({
                 coordinates,
                 distance: distance + 1,
                 score: score + pelletScore,
+                path: [...path, coordinates],
             });
         });
     }

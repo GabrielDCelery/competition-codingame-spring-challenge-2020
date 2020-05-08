@@ -36,7 +36,7 @@ export const createCommandsForTurn = (
         return {
             pacId,
             coordinates: chosenCoordinates,
-            comment: '',
+            comment: `${''}`,
         };
     });
 };
